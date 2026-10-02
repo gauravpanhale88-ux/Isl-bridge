@@ -1,249 +1,1790 @@
-<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#111827">
+
+<title>ISL Bridge — Sign Language Translator</title>
+
+<!-- MediaPipe Hands -->
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils@0.3.1675466862/drawing_utils.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469404/hands.js"></script>
+
+<style>
+*{
+  box-sizing:border-box;
+  margin:0;
+  padding:0;
+}
+
+body{
+  font-family:Arial,Helvetica,sans-serif;
+  background:#f3f4f6;
+  color:#111827;
+  min-height:100vh;
+}
+
+body.dark{
+  background:#0f172a;
+  color:#f8fafc;
+}
+
+.container{
+  width:min(1100px,94%);
+  margin:auto;
+}
+
+header{
+  padding:22px 0;
+  background:#ffffff;
+  border-bottom:1px solid #e5e7eb;
+}
+
+.dark header{
+  background:#111827;
+  border-color:#374151;
+}
+
+.header-inner{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:15px;
+}
+
+.logo{
+  font-size:25px;
+  font-weight:800;
+  color:#6d28d9;
+}
+
+.logo span{
+  color:#111827;
+}
+
+.dark .logo span{
+  color:white;
+}
+
+.theme-btn{
+  border:none;
+  background:#ede9fe;
+  color:#5b21b6;
+  padding:10px 14px;
+  border-radius:10px;
+  cursor:pointer;
+  font-size:18px;
+}
+
+.hero{
+  padding:35px 0 20px;
+  text-align:center;
+}
+
+.hero h1{
+  font-size:clamp(30px,6vw,52px);
+  margin-bottom:12px;
+}
+
+.hero p{
+  color:#6b7280;
+  max-width:700px;
+  margin:auto;
+  line-height:1.6;
+}
+
+.dark .hero p{
+  color:#cbd5e1;
+}
+
+.card{
+  background:white;
+  border-radius:20px;
+  padding:20px;
+  margin:20px 0;
+  box-shadow:0 10px 30px rgba(0,0,0,.08);
+}
+
+.dark .card{
+  background:#1e293b;
+  box-shadow:none;
+}
+
+.camera-area{
+  position:relative;
+  width:100%;
+  max-width:900px;
+  margin:auto;
+  background:#000;
+  border-radius:18px;
+  overflow:hidden;
+  aspect-ratio:16/9;
+}
+
+#video{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  display:block;
+  transform:scaleX(-1);
+}
+
+#canvas{
+  position:absolute;
+  left:0;
+  top:0;
+  width:100%;
+  height:100%;
+  pointer-events:none;
+  transform:scaleX(-1);
+}
+
+.camera-placeholder{
+  position:absolute;
+  inset:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  flex-direction:column;
+  color:white;
+  text-align:center;
+  background:linear-gradient(135deg,#111827,#312e81);
+  padding:20px;
+}
+
+.camera-placeholder.hidden{
+  display:none;
+}
+
+.status{
+  margin-top:15px;
+  padding:12px 15px;
+  border-radius:12px;
+  background:#f3f4f6;
+  font-size:14px;
+}
+
+.dark .status{
+  background:#0f172a;
+}
+
+.status.success{
+  color:#166534;
+  background:#dcfce7;
+}
+
+.status.error{
+  color:#991b1b;
+  background:#fee2e2;
+}
+
+.status.warning{
+  color:#92400e;
+  background:#fef3c7;
+}
+
+.buttons{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+  margin-top:15px;
+}
+
+button{
+  border:none;
+  border-radius:11px;
+  padding:12px 17px;
+  font-size:15px;
+  font-weight:600;
+  cursor:pointer;
+  transition:.2s;
+}
+
+button:hover{
+  transform:translateY(-1px);
+}
+
+.primary{
+  background:#6d28d9;
+  color:white;
+}
+
+.secondary{
+  background:#e5e7eb;
+  color:#111827;
+}
+
+.dark .secondary{
+  background:#334155;
+  color:white;
+}
+
+.danger{
+  background:#dc2626;
+  color:white;
+}
+
+.success-btn{
+  background:#059669;
+  color:white;
+}
+
+.output{
+  text-align:center;
+  padding:25px 15px;
+}
+
+.output-label{
+  font-size:14px;
+  color:#6b7280;
+  margin-bottom:8px;
+}
+
+#outputText{
+  font-size:clamp(30px,7vw,55px);
+  font-weight:800;
+  color:#6d28d9;
+  min-height:65px;
+}
+
+#confidence{
+  margin-top:10px;
+  color:#6b7280;
+}
+
+.grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+  gap:15px;
+}
+
+.sign-card{
+  padding:18px;
+  border-radius:15px;
+  background:#f9fafb;
+  border:1px solid #e5e7eb;
+}
+
+.dark .sign-card{
+  background:#0f172a;
+  border-color:#334155;
+}
+
+.sign-card h3{
+  margin-bottom:7px;
+  color:#6d28d9;
+}
+
+.sign-card p{
+  color:#6b7280;
+  line-height:1.5;
+}
+
+.dark .sign-card p{
+  color:#cbd5e1;
+}
+
+.section-title{
+  margin-bottom:15px;
+}
+
+.history-item{
+  display:flex;
+  justify-content:space-between;
+  gap:10px;
+  padding:12px 0;
+  border-bottom:1px solid #e5e7eb;
+}
+
+.dark .history-item{
+  border-color:#334155;
+}
+
+footer{
+  text-align:center;
+  padding:30px 10px;
+  color:#6b7280;
+}
+
+@media(max-width:600px){
+  .card{
+    padding:14px;
+    border-radius:15px;
+  }
+
+  .buttons button{
+    flex:1 1 45%;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <div class="container header-inner">
+    <div class="logo">
+      ISL <span>Bridge</span>
+    </div>
+
+    <button class="theme-btn" id="themeBtn" title="Toggle theme">
+      🌙
+    </button>
+  </div>
+</header>
+
+<main class="container">
+
+<section class="hero">
+  <h1>Indian Sign Language Translator</h1>
+  <p>
+    Show a sign in front of your camera and the system will try to
+    recognize the hand gesture and convert it into text and speech.
+  </p>
+</section>
+
+<section class="card">
+
+  <h2 class="section-title">📷 Camera Translator</h2>
+
+  <div class="camera-area">
+
+    <video id="video" autoplay playsinline muted></video>
+
+    <canvas id="canvas"></canvas>
+
+    <div class="camera-placeholder" id="placeholder">
+      <div style="font-size:50px;">✋</div>
+      <h3>Camera is not started</h3>
+      <p style="margin-top:8px;">
+        Tap "Start Camera" to begin.
+      </p>
+    </div>
+
+  </div>
+
+  <div id="cameraStatus" class="status">
+    Camera not started.
+  </div>
+
+  <div class="buttons">
+
+    <button class="primary" id="startCamera">
+      📷 Start Camera
+    </button>
+
+    <button class="secondary" id="switchCamera">
+      🔄 Switch Camera
+    </button>
+
+    <button class="danger" id="stopCamera">
+      ⏹ Stop Camera
+    </button>
+
+    <button class="success-btn" id="detect">
+      ✋ Start Recognition
+    </button>
+
+    <button class="secondary" id="stopDetect">
+      ⏸ Stop Recognition
+    </button>
+
+  </div>
+
+</section>
+
+
+<section class="card output">
+
+  <div class="output-label">
+    Detected Sign
+  </div>
+
+  <div id="outputText">
+    —
+  </div>
+
+  <div id="confidence">
+    Recognition is not running.
+  </div>
+
+  <div class="buttons" style="justify-content:center">
+
+    <button class="primary" id="speakBtn">
+      🔊 Speak
+    </button>
+
+    <button class="secondary" id="copyBtn">
+      📋 Copy
+    </button>
+
+    <button class="secondary" id="saveBtn">
+      💾 Save
+    </button>
+
+  </div>
+
+</section>
+
+
+<section class="card">
+
+  <h2 class="section-title">🌐 Output Language</h2>
+
+  <div class="buttons">
+
+    <button class="primary lang-btn" data-lang="en">
+      English
+    </button>
+
+    <button class="secondary lang-btn" data-lang="hi">
+      हिंदी
+    </button>
+
+    <button class="secondary lang-btn" data-lang="mr">
+      मराठी
+    </button>
+
+  </div>
+
+</section>
+
+
+<section class="card">
+
+  <h2 class="section-title">📚 Supported Demo Gestures</h2>
+
+  <div class="grid">
+
+    <div class="sign-card">
+      <h3>👋 Open Palm</h3>
+      <p>Hello / नमस्ते</p>
+    </div>
+
+    <div class="sign-card">
+      <h3>✊ Fist</h3>
+      <p>Yes</p>
+    </div>
+
+    <div class="sign-card">
+      <h3>✌️ Two Fingers</h3>
+      <p>No</p>
+    </div>
+
+    <div class="sign-card">
+      <h3>🤟 Three Fingers</h3>
+      <p>I Love You</p>
+    </div>
+
+  </div>
+
+</section>
+
+
+<section class="card">
+
+  <h2 class="section-title">🕘 History</h2>
+
+  <div id="history">
+    <p style="color:#6b7280;">
+      No saved signs yet.
+    </p>
+  </div>
+
+  <div class="buttons">
+    <button class="danger" id="clearHistory">
+      Clear History
+    </button>
+  </div>
+
+</section>
+
+</main>
+
+
+<footer>
+  ISL Bridge • Sign Language Learning & Recognition Prototype
+</footer>
+
+
 <script>
-const $=s=>document.querySelector(s);
-const video=$('#video'), canvas=$('#overlay'), ctx=canvas.getContext('2d');
 
-const signs=[
- {key:'hello',en:'Hello',hi:'नमस्ते',mr:'नमस्कार',hint:'Open palm'},
- {key:'yes',en:'Yes',hi:'हाँ',mr:'हो',hint:'Fist / repeated nod-like hand motion'},
- {key:'no',en:'No',hi:'नहीं',mr:'नाही',hint:'Index + middle fingers'},
- {key:'thankyou',en:'Thank you',hi:'धन्यवाद',mr:'धन्यवाद',hint:'Open hand moving forward'},
- {key:'iloveyou',en:'I love you',hi:'मैं तुमसे प्यार करता/करती हूँ',mr:'मला तुझ्यावर प्रेम आहे',hint:'Thumb, index and little finger raised'},
- {key:'help',en:'Help',hi:'मदद',mr:'मदत',hint:'Open palm gesture'},
- {key:'please',en:'Please',hi:'कृपया',mr:'कृपया',hint:'Flat hand / circular motion'}
-];
+"use strict";
 
-let stream=null, camera=null, hands=null, autoDetect=false, practiceTarget=null;
-let facingMode='user', cameraRunning=false;
+/* ================================
+   ELEMENTS
+================================ */
 
-function langText(s){return s[$('#lang').value==='hi-IN'?'hi':$('#lang').value==='mr-IN'?'mr':'en']}
-function setOutput(s,conf='Detected sign'){ 
-  $('#output').textContent=langText(s); 
-  $('#confidence').textContent=conf; 
-  $('#output').dataset.key=s.key;
-  if($('#autoSpeak').checked) speak($('#output').textContent); 
-}
+const $ = id => document.getElementById(id);
 
-function speak(t){ 
-  if(!('speechSynthesis' in window)){alert('Speech synthesis is not supported in this browser.');return} 
-  speechSynthesis.cancel();
-  let u=new SpeechSynthesisUtterance(t);
-  u.lang=$('#lang').value;
-  u.rate=+$('#rate').value;
-  speechSynthesis.speak(u);
-}
+const video = $("video");
+const canvas = $("canvas");
+const ctx = canvas.getContext("2d");
 
-$('#speak').onclick=()=>speak($('#output').textContent==='—'?'':$('#output').textContent);
-$('#manualSpeak').onclick=()=>speak($('#manual').value);
-$('#copy').onclick=async()=>{await navigator.clipboard.writeText($('#output').textContent);$('#confidence').textContent='Copied to clipboard';};
-$('#clear').onclick=()=>{$('#output').textContent='—';$('#confidence').textContent='Waiting for a sign…'};
-$('#save').onclick=()=>{
-  let t=$('#output').textContent;if(t==='—')return;
-  let h=JSON.parse(localStorage.getItem('islHistory')||'[]');
-  h.unshift({text:t,time:new Date().toLocaleString()});
-  localStorage.setItem('islHistory',JSON.stringify(h.slice(0,100)));
-  renderHistory();
+const placeholder = $("placeholder");
+const cameraStatus = $("cameraStatus");
+
+const outputText = $("outputText");
+const confidence = $("confidence");
+
+let stream = null;
+let currentFacingMode = "user";
+
+let hands = null;
+let handsReady = false;
+
+let recognitionRunning = false;
+let processing = false;
+let animationId = null;
+
+let lastGesture = null;
+let stableGesture = null;
+let stableCount = 0;
+
+let currentLanguage = "en";
+
+let currentOutput = "";
+
+let history = JSON.parse(
+  localStorage.getItem("isl_history") || "[]"
+);
+
+
+/* ================================
+   SIGN DATA
+================================ */
+
+const translations = {
+
+  hello:{
+    en:"Hello",
+    hi:"नमस्ते",
+    mr:"नमस्कार"
+  },
+
+  yes:{
+    en:"Yes",
+    hi:"हाँ",
+    mr:"हो"
+  },
+
+  no:{
+    en:"No",
+    hi:"नहीं",
+    mr:"नाही"
+  },
+
+  iloveyou:{
+    en:"I Love You",
+    hi:"मैं तुमसे प्यार करता हूँ",
+    mr:"माझे तुझ्यावर प्रेम आहे"
+  }
+
 };
-$('#clearHistory').onclick=()=>{localStorage.removeItem('islHistory');renderHistory()};
 
-function renderHistory(){
-  let h=JSON.parse(localStorage.getItem('islHistory')||'[]');
-  $('#historyList').innerHTML=h.length?h.map(x=>`<div class="historyItem"><b>${escapeHtml(x.text)}</b><div class="mini">${escapeHtml(x.time)}</div></div>`).join(''):'<div class="empty">No saved translations yet.</div>';
-}
-function escapeHtml(x){return x.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
-function renderDict(){ 
-  $('#dict').innerHTML=signs.map(s=>`<div class="dictItem"><span class="badge">${escapeHtml(s.en)}</span> <b>${escapeHtml(langText(s))}</b><div class="mini">${escapeHtml(s.hint)}</div></div>`).join('');
-  $('#target').innerHTML=signs.map(s=>`<option value="${s.key}">${escapeHtml(s.en)}</option>`).join('');
-}
-renderHistory();renderDict();
 
-document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{
-  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
-  document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active'));
-  b.classList.add('active');
-  $('#'+b.dataset.tab).classList.add('active');
-});
-$('#theme').onclick=()=>document.body.classList.toggle('dark');
+/* ================================
+   STATUS
+================================ */
 
-function setCameraStatus(message, type='info'){
- const box=$('#permissionBox');
- box.textContent=message;
- box.style.background=type==='error'?'#fff0f2':type==='good'?'#eaf8f1':'#f1f3f8';
- box.style.color=type==='error'?'#b52d3d':type==='good'?'#14764e':'#5d6677';
+function setCameraStatus(message,type=""){
+
+  cameraStatus.textContent = message;
+
+  cameraStatus.className = "status";
+
+  if(type){
+    cameraStatus.classList.add(type);
+  }
+
 }
+
+
+/* ================================
+   SECURE CAMERA CHECK
+================================ */
 
 function secureCameraCheck(){
- if(!window.isSecureContext){
-   setCameraStatus('❌ Camera requires HTTPS or localhost. This file was opened directly, so Chrome may block the camera.','error');
-   return false;
- }
- if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
-   setCameraStatus('❌ This browser does not provide camera access. Please use an updated Chrome/Edge browser.','error');
-   return false;
- }
- return true;
+
+  const secure =
+    location.protocol === "https:" ||
+    location.hostname === "localhost" ||
+    location.hostname === "127.0.0.1";
+
+  if(!secure){
+
+    setCameraStatus(
+      "❌ Camera requires HTTPS. Open this website through GitHub Pages or HTTPS.",
+      "error"
+    );
+
+    return false;
+  }
+
+  return true;
 }
+
+
+/* ================================
+   CAMERA PERMISSION
+================================ */
 
 async function checkCameraPermission(){
- if(!secureCameraCheck()) return;
- try{
-   if(navigator.permissions?.query){
-     const p=await navigator.permissions.query({name:'camera'});
-     if(p.state==='denied') setCameraStatus('❌ Camera permission is blocked. Open Chrome site permissions and set Camera → Allow.','error');
-     else if(p.state==='granted') setCameraStatus('✓ Camera permission is already allowed. Press Start camera.','good');
-     else setCameraStatus('Camera permission is ready. Press Start camera and choose Allow.','info');
-     p.onchange=()=>checkCameraPermission();
-   }else setCameraStatus('Press Start camera and choose Allow when Chrome asks.','info');
- }catch(e){setCameraStatus('Press Start camera and choose Allow when Chrome asks.','info')}
-}
 
-// MediaPipe Hands Model Initialization
-function initHandsModel(){
-  hands = new Hands({locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`});
-  hands.setOptions({
-    maxNumHands: 1,
-    modelComplexity: 1,
-    minDetectionConfidence: 0.6,
-    minTrackingConfidence: 0.6
-  });
-  hands.onResults(onHandResults);
-}
+  try{
 
-function classifyGesture(landmarks){
-  const isUp = (tip, pip) => landmarks[tip].y < landmarks[pip].y;
-  const thumbUp = Math.abs(landmarks[4].x - landmarks[2].x) > 0.08;
-  const indexUp = isUp(8, 6);
-  const middleUp = isUp(12, 10);
-  const ringUp = isUp(16, 14);
-  const pinkyUp = isUp(20, 18);
+    if(navigator.permissions){
 
-  // 1. Open Palm (Hello)
-  if (indexUp && middleUp && ringUp && pinkyUp) return 'hello';
-  // 2. Fist (Yes)
-  if (!indexUp && !middleUp && !ringUp && !pinkyUp) return 'yes';
-  // 3. Index + Middle (No / Victory)
-  if (indexUp && middleUp && !ringUp && !pinkyUp) return 'no';
-  // 4. I Love You (Thumb + Index + Pinky)
-  if (thumbUp && indexUp && !middleUp && !ringUp && pinkyUp) return 'iloveyou';
+      const permission =
+        await navigator.permissions.query({
+          name:"camera"
+        });
 
-  return null;
-}
+      if(permission.state === "denied"){
 
-function onHandResults(results){
-  canvas.width = video.videoWidth || 640;
-  canvas.height = video.videoHeight || 480;
-  ctx.save();
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+        setCameraStatus(
+          "❌ Camera permission is blocked. Open browser site settings and allow Camera.",
+          "error"
+        );
 
-  if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
-    const landmarks = results.multiHandLandmarks[0];
-    if ($('#drawLandmarks').checked) {
-      drawConnectors(ctx, landmarks, HAND_CONNECTIONS, {color: '#5b5ce2', lineWidth: 4});
-      drawLandmarks(ctx, landmarks, {color: '#ffffff', lineWidth: 2, radius: 3});
-    }
-
-    if (autoDetect) {
-      const detectedKey = classifyGesture(landmarks);
-      if (detectedKey) {
-        const found = signs.find(s => s.key === detectedKey);
-        if (found) {
-          setOutput(found, 'Detected with ~85% confidence');
-          if (practiceTarget) {
-            if (practiceTarget === detectedKey) {
-              $('#practiceFeedback').textContent = '✓ Correct sign!';
-              $('#practiceFeedback').style.color = 'green';
-            } else {
-              $('#practiceFeedback').textContent = 'Try again...';
-              $('#practiceFeedback').style.color = 'red';
-            }
-          }
-        }
+        return false;
       }
     }
+
+  }catch(error){
+
+    console.log("Permission API unavailable",error);
+
   }
-  ctx.restore();
+
+  return true;
 }
+
+
+/* ================================
+   START CAMERA
+================================ */
 
 async function startCamera(){
- if(!secureCameraCheck()) return;
- try{
-   if(stream) stopCamera();
-   setCameraStatus('Requesting camera permission…');
-   stream=await navigator.mediaDevices.getUserMedia({
-     audio:false,
-     video:{facingMode:{ideal:facingMode},width:{ideal:1280,min:640},height:{ideal:720,min:360}}
-   });
-   video.srcObject=stream;
-   await video.play();
-   cameraRunning=true;
-   $('#cameraStatus').textContent='Camera on';
-   setCameraStatus('✓ Camera is working. Your video is visible above.','good');
- }catch(e){
-   cameraRunning=false;
-   let msg='❌ Camera could not start.';
-   if(e.name==='NotAllowedError'||e.name==='PermissionDeniedError')
-     msg='❌ Camera permission was denied. In Chrome: site icon → Permissions → Camera → Allow, then try again.';
-   else if(e.name==='NotFoundError')
-     msg='❌ No camera was found on this device.';
-   else if(e.name==='NotReadableError')
-     msg='❌ Camera is busy in another app. Close other camera/video apps and try again.';
-   else if(e.name==='SecurityError')
-     msg='❌ Browser security blocked camera access. Use the HTTPS version of this website.';
-   else if(e.name==='OverconstrainedError'){
-     facingMode=facingMode==='user'?'environment':'user';
-     msg='Camera settings were not supported. Press Start camera again.';
-   }
-   setCameraStatus(msg,'error');
- }
+
+  if(!secureCameraCheck()) return;
+
+  const permissionOK =
+    await checkCameraPermission();
+
+  if(!permissionOK) return;
+
+  try{
+
+    if(stream){
+
+      stream.getTracks().forEach(
+        track => track.stop()
+      );
+
+      stream = null;
+    }
+
+    setCameraStatus(
+      "📷 Requesting camera permission..."
+    );
+
+    stream =
+      await navigator.mediaDevices.getUserMedia({
+
+        video:{
+          facingMode:{
+            ideal:currentFacingMode
+          },
+
+          width:{
+            ideal:1280
+          },
+
+          height:{
+            ideal:720
+          }
+        },
+
+        audio:false
+
+      });
+
+    video.srcObject = stream;
+
+    await video.play();
+
+    placeholder.classList.add("hidden");
+
+    setCameraStatus(
+      "✅ Camera is working. You can start recognition.",
+      "success"
+    );
+
+    confidence.textContent =
+      "Camera ready.";
+
+    resizeCanvas();
+
+  }catch(error){
+
+    console.error(error);
+
+    let message =
+      "❌ Camera could not start.";
+
+    if(error.name === "NotAllowedError"){
+      message =
+        "❌ Camera permission denied. Allow Camera permission in Chrome.";
+    }
+
+    else if(error.name === "NotFoundError"){
+      message =
+        "❌ No camera was found on this device.";
+    }
+
+    else if(error.name === "NotReadableError"){
+      message =
+        "❌ Camera is being used by another app.";
+    }
+
+    else if(error.name === "SecurityError"){
+      message =
+        "❌ Camera blocked by browser security.";
+    }
+
+    setCameraStatus(
+      message,
+      "error"
+    );
+
+  }
+
 }
+
+
+/* ================================
+   STOP CAMERA
+================================ */
 
 function stopCamera(){
- if(camera){try{camera.stop()}catch(e){} camera=null}
- if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}
- video.srcObject=null;
- cameraRunning=false;
- $('#cameraStatus').textContent='Camera off';
- setCameraStatus('Camera stopped. Press Start camera to use it.');
+
+  stopRecognition();
+
+  if(stream){
+
+    stream.getTracks().forEach(
+      track => track.stop()
+    );
+
+    stream = null;
+  }
+
+  video.srcObject = null;
+
+  placeholder.classList.remove("hidden");
+
+  clearCanvas();
+
+  setCameraStatus(
+    "Camera stopped."
+  );
+
 }
+
+
+/* ================================
+   SWITCH CAMERA
+================================ */
 
 async function switchCamera(){
- if(!secureCameraCheck()) return;
- facingMode=facingMode==='user'?'environment':'user';
- if(cameraRunning) await startCamera();
- else setCameraStatus(`Ready for ${facingMode==='user'?'front':'back'} camera. Press Start camera.`);
+
+  currentFacingMode =
+    currentFacingMode === "user"
+      ? "environment"
+      : "user";
+
+  if(stream){
+
+    await startCamera();
+
+  }else{
+
+    setCameraStatus(
+      "Camera mode changed. Start camera.",
+      "warning"
+    );
+
+  }
+
 }
 
-$('#start').onclick=startCamera;
-$('#switchCam').onclick=switchCamera;
-$('#stop').onclick=stopCamera;
-checkCameraPermission();
-initHandsModel();
 
-$('#detect').onclick=async()=>{
- if(!stream) await startCamera();
- if(!stream) return;
- if(!hands){setCameraStatus('❌ Hand tracking library could not load.','error');return}
- if(!camera){
-   camera=new Camera(video,{
-     onFrame:async()=>{if(video.readyState>=2) await hands.send({image:video})},
-     width:1280,height:720
-   });
-   camera.start();
- }
- autoDetect=true;
- $('#confidence').textContent='Hand tracking active… Show hand clearly.';
-};
+/* ================================
+   CANVAS
+================================ */
 
-$('#practiceStart').onclick=()=>{
- practiceTarget=$('#target').value;
- let s=signs.find(x=>x.key===practiceTarget);
- $('#practicePrompt').textContent=`Show: ${s.en} (${langText(s)})`;
- $('#practiceFeedback').textContent='Start camera and make the sign.';
- document.querySelector('[data-tab="translate"]').click();
- $('#detect').click();
-};
+function resizeCanvas(){
 
-window.addEventListener('beforeunload',stopCamera);
+  if(video.videoWidth){
+
+    canvas.width =
+      video.videoWidth;
+
+    canvas.height =
+      video.videoHeight;
+
+  }
+
+}
+
+
+function clearCanvas(){
+
+  ctx.clearRect(
+    0,
+    0,
+    canvas.width,
+    canvas.height
+  );
+
+}
+
+
+/* ================================
+   MEDIAPIPE INITIALIZATION
+================================ */
+
+async function initHands(){
+
+  if(handsReady && hands){
+    return true;
+  }
+
+  try{
+
+    if(typeof Hands === "undefined"){
+
+      throw new Error(
+        "MediaPipe Hands library did not load."
+      );
+
+    }
+
+    hands = new Hands({
+
+      locateFile:function(file){
+
+        return
+        `https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469404/${file}`;
+
+      }
+
+    });
+
+    hands.setOptions({
+
+      maxNumHands:1,
+
+      modelComplexity:1,
+
+      minDetectionConfidence:0.55,
+
+      minTrackingConfidence:0.55
+
+    });
+
+
+    hands.onResults(onHandsResults);
+
+    handsReady = true;
+
+    console.log(
+      "MediaPipe Hands initialized."
+    );
+
+    return true;
+
+  }catch(error){
+
+    console.error(
+      "MediaPipe initialization error:",
+      error
+    );
+
+    setCameraStatus(
+      "❌ Hand tracking model could not load. Check internet connection.",
+      "error"
+    );
+
+    return false;
+
+  }
+
+}
+
+
+/* ================================
+   MEDIAPIPE RESULTS
+================================ */
+
+function onHandsResults(results){
+
+  resizeCanvas();
+
+  clearCanvas();
+
+  if(
+    !results ||
+    !results.multiHandLandmarks ||
+    results.multiHandLandmarks.length === 0
+  ){
+
+    confidence.textContent =
+      "👋 No hand detected. Show your hand clearly.";
+
+    stableCount = 0;
+    stableGesture = null;
+
+    return;
+  }
+
+
+  const landmarks =
+    results.multiHandLandmarks[0];
+
+
+  /* Draw connections */
+
+  if(typeof drawConnectors === "function"){
+
+    drawConnectors(
+      ctx,
+      landmarks,
+      HAND_CONNECTIONS,
+      {
+        color:"#a855f7",
+        lineWidth:4
+      }
+    );
+
+  }
+
+
+  /* Draw landmarks */
+
+  if(typeof drawLandmarks === "function"){
+
+    drawLandmarks(
+      ctx,
+      landmarks,
+      {
+        color:"#ffffff",
+        fillColor:"#7c3aed",
+        lineWidth:2,
+        radius:5
+      }
+    );
+
+  }
+
+
+  const gesture =
+    detectGesture(landmarks);
+
+
+  if(!gesture){
+
+    confidence.textContent =
+      "✋ Hand detected. Gesture not recognized.";
+
+    return;
+
+  }
+
+
+  if(gesture === lastGesture){
+
+    stableCount++;
+
+  }else{
+
+    lastGesture = gesture;
+    stableCount = 1;
+
+  }
+
+
+  confidence.textContent =
+    `✋ Hand detected • stabilizing gesture (${stableCount}/5)`;
+
+
+  if(
+    stableCount >= 5 &&
+    stableGesture !== gesture
+  ){
+
+    stableGesture = gesture;
+
+    showGesture(gesture);
+
+  }
+
+}
+
+
+/* ================================
+   LANDMARK GEOMETRY
+================================ */
+
+function distance(a,b){
+
+  const dx = a.x - b.x;
+  const dy = a.y - b.y;
+
+  return Math.sqrt(
+    dx*dx + dy*dy
+  );
+
+}
+
+
+/*
+  MediaPipe landmark indexes:
+
+  Thumb:
+  4 = tip
+  3 = IP
+
+  Index:
+  8 = tip
+  6 = PIP
+
+  Middle:
+  12 = tip
+  10 = PIP
+
+  Ring:
+  16 = tip
+  14 = PIP
+
+  Pinky:
+  20 = tip
+  18 = PIP
+*/
+
+
+function fingerExtended(
+  landmarks,
+  tip,
+  pip
+){
+
+  return landmarks[tip].y <
+         landmarks[pip].y;
+
+}
+
+
+/* ================================
+   GESTURE DETECTION
+================================ */
+
+function detectGesture(landmarks){
+
+  const index =
+    fingerExtended(
+      landmarks,
+      8,
+      6
+    );
+
+  const middle =
+    fingerExtended(
+      landmarks,
+      12,
+      10
+    );
+
+  const ring =
+    fingerExtended(
+      landmarks,
+      16,
+      14
+    );
+
+  const pinky =
+    fingerExtended(
+      landmarks,
+      20,
+      18
+    );
+
+
+  /*
+    Thumb detection is slightly different
+    because it moves horizontally.
+  */
+
+  const thumb =
+    distance(
+      landmarks[4],
+      landmarks[17]
+    ) >
+    distance(
+      landmarks[3],
+      landmarks[17]
+    ) * 1.15;
+
+
+  /* OPEN PALM */
+
+  if(
+    thumb &&
+    index &&
+    middle &&
+    ring &&
+    pinky
+  ){
+
+    return "hello";
+
+  }
+
+
+  /* FIST */
+
+  if(
+    !index &&
+    !middle &&
+    !ring &&
+    !pinky
+  ){
+
+    return "yes";
+
+  }
+
+
+  /* TWO FINGERS */
+
+  if(
+    index &&
+    middle &&
+    !ring &&
+    !pinky
+  ){
+
+    return "no";
+
+  }
+
+
+  /*
+    I LOVE YOU demo:
+    Thumb + index + pinky extended
+  */
+
+  if(
+    thumb &&
+    index &&
+    !middle &&
+    !ring &&
+    pinky
+  ){
+
+    return "iloveyou";
+
+  }
+
+
+  return null;
+
+}
+
+
+/* ================================
+   SHOW GESTURE
+================================ */
+
+function showGesture(gesture){
+
+  if(!translations[gesture]) return;
+
+  const text =
+    translations[gesture][currentLanguage];
+
+  currentOutput = text;
+
+  outputText.textContent =
+    text;
+
+  confidence.textContent =
+    "✅ Gesture recognized.";
+
+  addHistory(text);
+
+}
+
+
+/* ================================
+   PROCESS CAMERA FRAMES
+================================ */
+
+async function processFrames(){
+
+  if(!recognitionRunning){
+
+    animationId = null;
+
+    return;
+  }
+
+
+  if(
+    !processing &&
+    handsReady &&
+    video.readyState >= 2
+  ){
+
+    processing = true;
+
+    try{
+
+      await hands.send({
+        image:video
+      });
+
+    }catch(error){
+
+      console.error(
+        "Hands processing error:",
+        error
+      );
+
+      confidence.textContent =
+        "⚠️ Hand processing error.";
+
+    }
+
+    processing = false;
+
+  }
+
+
+  animationId =
+    requestAnimationFrame(
+      processFrames
+    );
+
+}
+
+
+/* ================================
+   START RECOGNITION
+================================ */
+
+async function startRecognition(){
+
+  if(!stream){
+
+    await startCamera();
+
+  }
+
+  if(!stream){
+
+    return;
+  }
+
+
+  const ready =
+    await initHands();
+
+  if(!ready){
+
+    return;
+  }
+
+
+  if(recognitionRunning){
+
+    return;
+  }
+
+
+  recognitionRunning = true;
+
+  lastGesture = null;
+  stableGesture = null;
+  stableCount = 0;
+
+  confidence.textContent =
+    "✋ Recognition active. Show one hand clearly.";
+
+  setCameraStatus(
+    "✅ Camera + hand recognition active.",
+    "success"
+  );
+
+
+  processFrames();
+
+}
+
+
+/* ================================
+   STOP RECOGNITION
+================================ */
+
+function stopRecognition(){
+
+  recognitionRunning = false;
+
+  processing = false;
+
+  if(animationId){
+
+    cancelAnimationFrame(
+      animationId
+    );
+
+    animationId = null;
+
+  }
+
+  clearCanvas();
+
+  confidence.textContent =
+    "Recognition stopped.";
+
+}
+
+
+/* ================================
+   TEXT TO SPEECH
+================================ */
+
+function speakText(){
+
+  if(!currentOutput){
+
+    return;
+  }
+
+  if(!("speechSynthesis" in window)){
+
+    alert(
+      "Text-to-Speech is not supported by this browser."
+    );
+
+    return;
+  }
+
+
+  window.speechSynthesis.cancel();
+
+
+  const utterance =
+    new SpeechSynthesisUtterance(
+      currentOutput
+    );
+
+
+  if(currentLanguage === "hi"){
+
+    utterance.lang =
+      "hi-IN";
+
+  }
+
+  else if(currentLanguage === "mr"){
+
+    utterance.lang =
+      "mr-IN";
+
+  }
+
+  else{
+
+    utterance.lang =
+      "en-US";
+
+  }
+
+
+  utterance.rate = 0.9;
+
+  window.speechSynthesis.speak(
+    utterance
+  );
+
+}
+
+
+/* ================================
+   COPY
+================================ */
+
+async function copyText(){
+
+  if(!currentOutput){
+
+    return;
+  }
+
+  try{
+
+    await navigator.clipboard.writeText(
+      currentOutput
+    );
+
+    confidence.textContent =
+      "📋 Text copied.";
+
+  }catch(error){
+
+    alert(
+      "Could not copy text."
+    );
+
+  }
+
+}
+
+
+/* ================================
+   HISTORY
+================================ */
+
+function addHistory(text){
+
+  if(!text) return;
+
+  const item = {
+
+    text:text,
+
+    time:new Date().toLocaleString()
+
+  };
+
+
+  history.unshift(item);
+
+  history =
+    history.slice(0,30);
+
+  localStorage.setItem(
+    "isl_history",
+    JSON.stringify(history)
+  );
+
+  renderHistory();
+
+}
+
+
+function renderHistory(){
+
+  const container =
+    $("history");
+
+
+  if(history.length === 0){
+
+    container.innerHTML =
+      `<p style="color:#6b7280;">
+        No saved signs yet.
+      </p>`;
+
+    return;
+  }
+
+
+  container.innerHTML =
+    history.map(item => {
+
+      return `
+        <div class="history-item">
+          <strong>${escapeHTML(item.text)}</strong>
+          <small>${escapeHTML(item.time)}</small>
+        </div>
+      `;
+
+    }).join("");
+
+}
+
+
+function escapeHTML(text){
+
+  return String(text)
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;")
+    .replaceAll("'","&#039;");
+
+}
+
+
+/* ================================
+   SAVE CURRENT
+================================ */
+
+function saveCurrent(){
+
+  if(!currentOutput){
+
+    return;
+  }
+
+  addHistory(currentOutput);
+
+  confidence.textContent =
+    "💾 Sign saved.";
+
+}
+
+
+/* ================================
+   LANGUAGE
+================================ */
+
+function changeLanguage(lang){
+
+  currentLanguage = lang;
+
+  document
+    .querySelectorAll(".lang-btn")
+    .forEach(button => {
+
+      button.classList.remove(
+        "primary"
+      );
+
+      button.classList.add(
+        "secondary"
+      );
+
+    });
+
+
+  const active =
+    document.querySelector(
+      `.lang-btn[data-lang="${lang}"]`
+    );
+
+
+  if(active){
+
+    active.classList.remove(
+      "secondary"
+    );
+
+    active.classList.add(
+      "primary"
+    );
+
+  }
+
+
+  /*
+    Update current output
+    if a gesture already exists.
+  */
+
+  if(stableGesture &&
+     translations[stableGesture]){
+
+    currentOutput =
+      translations[stableGesture][lang];
+
+    outputText.textContent =
+      currentOutput;
+
+  }
+
+}
+
+
+/* ================================
+   THEME
+================================ */
+
+function toggleTheme(){
+
+  document.body.classList.toggle(
+    "dark"
+  );
+
+  const dark =
+    document.body.classList.contains(
+      "dark"
+    );
+
+  localStorage.setItem(
+    "isl_dark",
+    dark ? "1" : "0"
+  );
+
+  $("themeBtn").textContent =
+    dark ? "☀️" : "🌙";
+
+}
+
+
+function loadTheme(){
+
+  const dark =
+    localStorage.getItem(
+      "isl_dark"
+    ) === "1";
+
+  if(dark){
+
+    document.body.classList.add(
+      "dark"
+    );
+
+    $("themeBtn").textContent =
+      "☀️";
+
+  }
+
+}
+
+
+/* ================================
+   BUTTON EVENTS
+================================ */
+
+$("startCamera").onclick =
+  startCamera;
+
+$("stopCamera").onclick =
+  stopCamera;
+
+$("switchCamera").onclick =
+  switchCamera;
+
+$("detect").onclick =
+  startRecognition;
+
+$("stopDetect").onclick =
+  stopRecognition;
+
+$("speakBtn").onclick =
+  speakText;
+
+$("copyBtn").onclick =
+  copyText;
+
+$("saveBtn").onclick =
+  saveCurrent;
+
+$("themeBtn").onclick =
+  toggleTheme;
+
+
+document
+  .querySelectorAll(".lang-btn")
+  .forEach(button => {
+
+    button.onclick = () => {
+
+      changeLanguage(
+        button.dataset.lang
+      );
+
+    };
+
+  });
+
+
+$("clearHistory").onclick =
+  function(){
+
+    if(
+      confirm(
+        "Clear all saved history?"
+      )
+    ){
+
+      history = [];
+
+      localStorage.removeItem(
+        "isl_history"
+      );
+
+      renderHistory();
+
+    }
+
+  };
+
+
+/* ================================
+   VIDEO EVENTS
+================================ */
+
+video.addEventListener(
+  "loadedmetadata",
+  resizeCanvas
+);
+
+window.addEventListener(
+  "resize",
+  resizeCanvas
+);
+
+
+/* ================================
+   INITIAL LOAD
+================================ */
+
+loadTheme();
+
+renderHistory();
+
+changeLanguage("en");
+
+
+/*
+  Check browser support
+*/
+
+if(!navigator.mediaDevices ||
+   !navigator.mediaDevices.getUserMedia){
+
+  setCameraStatus(
+    "❌ This browser does not support camera access.",
+    "error"
+  );
+
+}
+
+
+/*
+  Preload MediaPipe.
+  This does not start the camera.
+*/
+
+initHands().then(ok => {
+
+  if(ok){
+
+    console.log(
+      "✅ ISL Bridge is ready."
+    );
+
+  }
+
+});
+
 </script>
+
+</body>
+</html>
