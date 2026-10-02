@@ -875,14 +875,15 @@ async function initHands(){
     hands = new Hands({
 
       locateFile:function(file){
+    hands = new Hands({
 
-        return
-        `https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469404/${file}`;
+      locateFile: function(file){
+
+        return `https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469404/${file}`;
 
       }
 
     });
-
     hands.setOptions({
 
       maxNumHands:1,
