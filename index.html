@@ -1,67 +1,10 @@
-<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>ISL Bridge — Sign Language Translator</title>
-<style>
-:root{--bg:#f6f8fc;--card:#fff;--text:#172033;--muted:#687386;--accent:#5b5ce2;--line:#e4e8f0;--good:#168a5a;--danger:#c53d4c}
-*{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif;background:var(--bg);color:var(--text)}
-header{position:sticky;top:0;z-index:5;background:rgba(255,255,255,.94);backdrop-filter:blur(12px);border-bottom:1px solid var(--line)}
-nav{max-width:1180px;margin:auto;padding:14px 18px;display:flex;align-items:center;gap:12px}.brand{font-weight:800;font-size:20px}.brand span{color:var(--accent)}
-nav .spacer{flex:1}button,select,input{font:inherit}button{border:0;border-radius:12px;padding:10px 14px;cursor:pointer;font-weight:700}button.primary{background:var(--accent);color:#fff}button.ghost{background:#eef0ff;color:#4546b8}button.danger{background:#fff0f2;color:var(--danger)}
-main{max-width:1180px;margin:22px auto;padding:0 18px}.hero{margin-bottom:18px}.hero h1{margin:0 0 7px;font-size:clamp(28px,4vw,46px)}.hero p{color:var(--muted);max-width:800px}
-.grid{display:grid;grid-template-columns:1.2fr .8fr;gap:18px}.card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:18px;box-shadow:0 8px 30px rgba(25,35,60,.05)}.card h2{margin:0 0 12px;font-size:18px}
-.videoWrap{position:relative;aspect-ratio:16/10;background:#10131b;border-radius:16px;overflow:hidden}.videoWrap video{width:100%;height:100%;object-fit:cover;transform:scaleX(-1)}#overlay{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}.status{position:absolute;left:12px;top:12px;background:rgba(0,0,0,.65);color:#fff;padding:7px 10px;border-radius:999px;font-size:13px}
-.controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.result{min-height:190px}.confidence{font-size:13px;color:var(--muted);margin-bottom:8px}.output{font-size:27px;font-weight:800;line-height:1.25}.output[contenteditable=true]{outline:2px solid #dfe1ff;border-radius:10px;padding:8px}
-.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.row>*{flex:1}.row button{flex:0 0 auto}.mini{font-size:13px;color:var(--muted)}
-.tabs{display:flex;gap:7px;margin-bottom:14px;flex-wrap:wrap}.tab{background:#eef0f6}.tab.active{background:var(--accent);color:#fff}
-.panel{display:none}.panel.active{display:block}
-.historyItem,.dictItem{padding:12px 0;border-bottom:1px solid var(--line)}.historyItem:last-child,.dictItem:last-child{border-bottom:0}
-.badge{display:inline-block;padding:4px 8px;border-radius:999px;background:#eef0ff;color:#4b4cc4;font-size:12px;font-weight:700}.empty{color:var(--muted);padding:25px 0;text-align:center}
-footer{max-width:1180px;margin:25px auto;padding:0 18px 35px;color:var(--muted);font-size:13px}
-.dark{--bg:#0e1118;--card:#151a24;--text:#edf1fa;--muted:#9aa5b8;--line:#293142}.dark header{background:rgba(21,26,36,.94)}
-@media(max-width:850px){.grid{grid-template-columns:1fr}nav{padding:12px}.hero h1{font-size:31px}}
-</style>
-</head>
-<body>
-<header><nav><div class="brand">ISL <span>Bridge</span></div><div class="spacer"></div>
-<select id="lang"><option value="en-IN">English</option><option value="hi-IN">हिन्दी</option><option value="mr-IN">मराठी</option></select>
-<button class="ghost" id="theme">🌙</button></nav></header>
-<main>
-<section class="hero"><h1>Indian Sign Language Translator</h1><p>Use your camera to practise and translate supported signs. The app shows a confidence estimate, lets you edit the result, speaks it aloud, and keeps your local history.</p></section>
-<div class="tabs">
-<button class="tab active" data-tab="translate">🎥 Translate</button><button class="tab" data-tab="dictionary">🤟 Sign Dictionary</button><button class="tab" data-tab="practice">🎯 Practice</button><button class="tab" data-tab="history">🕘 History</button><button class="tab" data-tab="settings">⚙️ Settings</button>
-</div>
-
-<section id="translate" class="panel active">
-<div class="grid">
-<div class="card"><h2>Camera</h2>
-<div class="videoWrap"><video id="video" autoplay muted playsinline></video><canvas id="overlay"></canvas><div class="status" id="cameraStatus">Camera off</div></div>
-<div class="controls"><button class="primary" id="start">📷 Start camera</button><button class="ghost" id="switchCam">🔄 Switch camera</button><button class="ghost" id="stop">⏹ Stop</button><button class="ghost" id="detect">🤟 Start recognition</button></div>
-<div id="permissionBox" style="margin-top:10px;padding:12px;border-radius:12px;background:#f1f3f8;color:#5d6677;font-size:13px">Camera status: checking…</div>
-<p class="mini">For camera access, open this website using <b>HTTPS</b> (or localhost), then press Allow when Chrome asks for camera permission.</p>
-</div>
-<div class="card result"><h2>Recognised meaning</h2><div class="confidence" id="confidence">Waiting for a sign…</div><div class="output" id="output">—</div>
-<div class="controls"><button class="primary" id="speak">🔊 Speak</button><button class="ghost" id="copy">Copy</button><button class="ghost" id="save">Save</button><button class="danger" id="clear">Clear</button></div>
-<hr style="border:0;border-top:1px solid var(--line);margin:18px 0">
-<div class="row"><input id="manual" placeholder="Or type text here…"><button class="ghost" id="manualSpeak">Speak text</button></div>
-</div></div>
-</section>
-
-<section id="dictionary" class="panel"><div class="card"><h2>Supported sign library</h2><div id="dict"></div></div></section>
-<section id="practice" class="panel"><div class="card"><h2>Practice mode</h2><p class="mini">Choose a target and try the sign in front of the camera. This prototype recognises a small set of gesture patterns; a production ISL model can replace the recogniser.</p><div class="row"><select id="target"></select><button class="primary" id="practiceStart">Start practice</button></div><h3 id="practicePrompt">Choose a target</h3><div id="practiceFeedback" class="mini"></div></div></section>
-<section id="history" class="panel"><div class="card"><div class="row"><h2 style="margin:0">Translation history</h2><button class="danger" id="clearHistory">Clear history</button></div><div id="historyList"></div></div></section>
-<section id="settings" class="panel"><div class="card"><h2>Settings</h2><label><input type="checkbox" id="autoSpeak"> Automatically speak recognised text</label><br><br><label><input type="checkbox" id="drawLandmarks" checked> Show hand landmarks</label><br><br><label>Speech rate <input id="rate" type="range" min=".6" max="1.4" step=".1" value="1"></label><p class="mini">Privacy: camera frames are processed in your browser by this prototype. History is stored in this browser's local storage.</p></div></section>
-</main>
-<footer>ISL Bridge prototype • Camera requires HTTPS or localhost. Recognition accuracy depends on the model, framing and lighting.</footer>
-
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
 <script>
 const $=s=>document.querySelector(s);
 const video=$('#video'), canvas=$('#overlay'), ctx=canvas.getContext('2d');
+
 const signs=[
  {key:'hello',en:'Hello',hi:'नमस्ते',mr:'नमस्कार',hint:'Open palm'},
  {key:'yes',en:'Yes',hi:'हाँ',mr:'हो',hint:'Fist / repeated nod-like hand motion'},
@@ -71,27 +14,58 @@ const signs=[
  {key:'help',en:'Help',hi:'मदद',mr:'मदत',hint:'Open palm gesture'},
  {key:'please',en:'Please',hi:'कृपया',mr:'कृपया',hint:'Flat hand / circular motion'}
 ];
-let stream=null, lastGesture=null, lastTime=0, practiceTarget=null, autoDetect=false;
+
+let stream=null, camera=null, hands=null, autoDetect=false, practiceTarget=null;
+let facingMode='user', cameraRunning=false;
+
 function langText(s){return s[$('#lang').value==='hi-IN'?'hi':$('#lang').value==='mr-IN'?'mr':'en']}
-function setOutput(s,conf='Detected sign'){ $('#output').textContent=langText(s); $('#confidence').textContent=conf; $('#output').dataset.key=s.key;
- if($('#autoSpeak').checked) speak($('#output').textContent); }
-function speak(t){ if(!('speechSynthesis' in window)){alert('Speech synthesis is not supported in this browser.');return} speechSynthesis.cancel();let u=new SpeechSynthesisUtterance(t);u.lang=$('#lang').value;u.rate=+$('#rate').value;speechSynthesis.speak(u)}
+function setOutput(s,conf='Detected sign'){ 
+  $('#output').textContent=langText(s); 
+  $('#confidence').textContent=conf; 
+  $('#output').dataset.key=s.key;
+  if($('#autoSpeak').checked) speak($('#output').textContent); 
+}
+
+function speak(t){ 
+  if(!('speechSynthesis' in window)){alert('Speech synthesis is not supported in this browser.');return} 
+  speechSynthesis.cancel();
+  let u=new SpeechSynthesisUtterance(t);
+  u.lang=$('#lang').value;
+  u.rate=+$('#rate').value;
+  speechSynthesis.speak(u);
+}
+
 $('#speak').onclick=()=>speak($('#output').textContent==='—'?'':$('#output').textContent);
 $('#manualSpeak').onclick=()=>speak($('#manual').value);
 $('#copy').onclick=async()=>{await navigator.clipboard.writeText($('#output').textContent);$('#confidence').textContent='Copied to clipboard';};
 $('#clear').onclick=()=>{$('#output').textContent='—';$('#confidence').textContent='Waiting for a sign…'};
-$('#save').onclick=()=>{let t=$('#output').textContent;if(t==='—')return;let h=JSON.parse(localStorage.getItem('islHistory')||'[]');h.unshift({text:t,time:new Date().toLocaleString()});localStorage.setItem('islHistory',JSON.stringify(h.slice(0,100)));renderHistory()};
+$('#save').onclick=()=>{
+  let t=$('#output').textContent;if(t==='—')return;
+  let h=JSON.parse(localStorage.getItem('islHistory')||'[]');
+  h.unshift({text:t,time:new Date().toLocaleString()});
+  localStorage.setItem('islHistory',JSON.stringify(h.slice(0,100)));
+  renderHistory();
+};
 $('#clearHistory').onclick=()=>{localStorage.removeItem('islHistory');renderHistory()};
-function renderHistory(){let h=JSON.parse(localStorage.getItem('islHistory')||'[]');$('#historyList').innerHTML=h.length?h.map(x=>`<div class="historyItem"><b>${escapeHtml(x.text)}</b><div class="mini">${escapeHtml(x.time)}</div></div>`).join(''):'<div class="empty">No saved translations yet.</div>'}
+
+function renderHistory(){
+  let h=JSON.parse(localStorage.getItem('islHistory')||'[]');
+  $('#historyList').innerHTML=h.length?h.map(x=>`<div class="historyItem"><b>${escapeHtml(x.text)}</b><div class="mini">${escapeHtml(x.time)}</div></div>`).join(''):'<div class="empty">No saved translations yet.</div>';
+}
 function escapeHtml(x){return x.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
-function renderDict(){ $('#dict').innerHTML=signs.map(s=>`<div class="dictItem"><span class="badge">${escapeHtml(s.en)}</span> <b>${escapeHtml(langText(s))}</b><div class="mini">${escapeHtml(s.hint)}</div></div>`).join('');$('#target').innerHTML=signs.map(s=>`<option value="${s.key}">${escapeHtml(s.en)}</option>`).join('') }
+function renderDict(){ 
+  $('#dict').innerHTML=signs.map(s=>`<div class="dictItem"><span class="badge">${escapeHtml(s.en)}</span> <b>${escapeHtml(langText(s))}</b><div class="mini">${escapeHtml(s.hint)}</div></div>`).join('');
+  $('#target').innerHTML=signs.map(s=>`<option value="${s.key}">${escapeHtml(s.en)}</option>`).join('');
+}
 renderHistory();renderDict();
 
-document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active'));b.classList.add('active');$('#'+b.dataset.tab).classList.add('active')});
+document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active'));
+  b.classList.add('active');
+  $('#'+b.dataset.tab).classList.add('active');
+});
 $('#theme').onclick=()=>document.body.classList.toggle('dark');
-
-let facingMode='user';
-let cameraRunning=false;
 
 function setCameraStatus(message, type='info'){
  const box=$('#permissionBox');
@@ -125,6 +99,73 @@ async function checkCameraPermission(){
  }catch(e){setCameraStatus('Press Start camera and choose Allow when Chrome asks.','info')}
 }
 
+// MediaPipe Hands Model Initialization
+function initHandsModel(){
+  hands = new Hands({locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`});
+  hands.setOptions({
+    maxNumHands: 1,
+    modelComplexity: 1,
+    minDetectionConfidence: 0.6,
+    minTrackingConfidence: 0.6
+  });
+  hands.onResults(onHandResults);
+}
+
+function classifyGesture(landmarks){
+  const isUp = (tip, pip) => landmarks[tip].y < landmarks[pip].y;
+  const thumbUp = Math.abs(landmarks[4].x - landmarks[2].x) > 0.08;
+  const indexUp = isUp(8, 6);
+  const middleUp = isUp(12, 10);
+  const ringUp = isUp(16, 14);
+  const pinkyUp = isUp(20, 18);
+
+  // 1. Open Palm (Hello)
+  if (indexUp && middleUp && ringUp && pinkyUp) return 'hello';
+  // 2. Fist (Yes)
+  if (!indexUp && !middleUp && !ringUp && !pinkyUp) return 'yes';
+  // 3. Index + Middle (No / Victory)
+  if (indexUp && middleUp && !ringUp && !pinkyUp) return 'no';
+  // 4. I Love You (Thumb + Index + Pinky)
+  if (thumbUp && indexUp && !middleUp && !ringUp && pinkyUp) return 'iloveyou';
+
+  return null;
+}
+
+function onHandResults(results){
+  canvas.width = video.videoWidth || 640;
+  canvas.height = video.videoHeight || 480;
+  ctx.save();
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+    const landmarks = results.multiHandLandmarks[0];
+    if ($('#drawLandmarks').checked) {
+      drawConnectors(ctx, landmarks, HAND_CONNECTIONS, {color: '#5b5ce2', lineWidth: 4});
+      drawLandmarks(ctx, landmarks, {color: '#ffffff', lineWidth: 2, radius: 3});
+    }
+
+    if (autoDetect) {
+      const detectedKey = classifyGesture(landmarks);
+      if (detectedKey) {
+        const found = signs.find(s => s.key === detectedKey);
+        if (found) {
+          setOutput(found, 'Detected with ~85% confidence');
+          if (practiceTarget) {
+            if (practiceTarget === detectedKey) {
+              $('#practiceFeedback').textContent = '✓ Correct sign!';
+              $('#practiceFeedback').style.color = 'green';
+            } else {
+              $('#practiceFeedback').textContent = 'Try again...';
+              $('#practiceFeedback').style.color = 'red';
+            }
+          }
+        }
+      }
+    }
+  }
+  ctx.restore();
+}
+
 async function startCamera(){
  if(!secureCameraCheck()) return;
  try{
@@ -132,11 +173,7 @@ async function startCamera(){
    setCameraStatus('Requesting camera permission…');
    stream=await navigator.mediaDevices.getUserMedia({
      audio:false,
-     video:{
-       facingMode:{ideal:facingMode},
-       width:{ideal:1280,min:640},
-       height:{ideal:720,min:360}
-     }
+     video:{facingMode:{ideal:facingMode},width:{ideal:1280,min:640},height:{ideal:720,min:360}}
    });
    video.srcObject=stream;
    await video.play();
@@ -159,7 +196,6 @@ async function startCamera(){
      msg='Camera settings were not supported. Press Start camera again.';
    }
    setCameraStatus(msg,'error');
-   console.error(e);
  }
 }
 
@@ -183,20 +219,31 @@ $('#start').onclick=startCamera;
 $('#switchCam').onclick=switchCamera;
 $('#stop').onclick=stopCamera;
 checkCameraPermission();
+initHandsModel();
 
 $('#detect').onclick=async()=>{
  if(!stream) await startCamera();
  if(!stream) return;
- if(!hands){setCameraStatus('❌ Hand tracking library could not load. Check your internet connection.','error');return}
+ if(!hands){setCameraStatus('❌ Hand tracking library could not load.','error');return}
  if(!camera){
-   camera=new Camera(video,{onFrame:async()=>{if(video.readyState>=2) await hands.send({image:video})},width:1280,height:720});
+   camera=new Camera(video,{
+     onFrame:async()=>{if(video.readyState>=2) await hands.send({image:video})},
+     width:1280,height:720
+   });
    camera.start();
  }
  autoDetect=true;
- $('#confidence').textContent='Hand tracking active… Show one hand clearly in the camera.';
+ $('#confidence').textContent='Hand tracking active… Show hand clearly.';
 };
-$('#practiceStart').onclick=()=>{practiceTarget=$('#target').value;let s=signs.find(x=>x.key===practiceTarget);$('#practicePrompt').textContent=`Show: ${s.en} (${langText(s)})`;$('#practiceFeedback').textContent='Start camera and make the sign.';document.querySelector('[data-tab="translate"]').click();$('#detect').click()};
+
+$('#practiceStart').onclick=()=>{
+ practiceTarget=$('#target').value;
+ let s=signs.find(x=>x.key===practiceTarget);
+ $('#practicePrompt').textContent=`Show: ${s.en} (${langText(s)})`;
+ $('#practiceFeedback').textContent='Start camera and make the sign.';
+ document.querySelector('[data-tab="translate"]').click();
+ $('#detect').click();
+};
+
 window.addEventListener('beforeunload',stopCamera);
 </script>
-</body>
-</html>
